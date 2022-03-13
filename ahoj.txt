@@ -1,5 +1,5 @@
 .IPPcode22
-DEFVAR GF@counter
+DEFVAR GF@counter 	
 MOVE GF@counter string@ #Inicializace proměnné na prázdný řetězec
 #Jednoduchá iterace , dokud nebude splněna zadaná podmínka
 label while

@@ -25,11 +25,78 @@ for ($i=0;($line = fgets($stdin)) !== false;$i++) {
     $xml->startElement("instruction");
     $xml->writeAttribute("order",$i);
     $xml->writeAttribute("opcode",$words[0]);
-    createArgument($xml,"arg1",getArgType($words,1),$words[1]);
+
     switch($words[0]){
+        case "POPS":
+        case "CALL":
         case "DEFVAR":
-            createArgument($xml,"arg1",getArgType($words,1),"");
+            checkNumbArg($words,1);
+
+            createArgument($xml, "arg1", "var", getContent($words[1]));
             break;
+        case "BREAK":
+        case "RETURN":
+        case "CREATEFRAME":
+        case "PUSHFRAME":
+        case "POPFRAME":
+            checkNumbArg($words,0);
+            break;
+        case "WRITE":
+        case "EXIT":
+        case "DPRINT":
+        case "PUSH":
+            checkNumbArg($words,1);
+
+            createArgument($xml, "arg1", getArgType($words[1]), getContent($words[1]));
+            break;
+        case "ADD" :
+        case "SUB":
+        case "MUL":
+        case "IDIV":
+        case "LT":
+        case "GT":
+        case "EQ":
+        case "AND":
+        case "OR":
+        case "NOT":
+        case "STRI2INT":
+        case "CONCAT":
+        case "GETCHAR":
+        case "SETCHAR":
+            checkNumbArg($words,3);
+
+            //check dividing zero
+            if($words[0] == "IDIV" && getContent($words[3],3)==0){
+                exit(57);
+            }
+
+            createArgument($xml, "arg1", "var", getContent($words[1]));
+            createArgument($xml, "arg2", getArgType($words[2]), getContent($words[2]));
+            createArgument($xml, "arg3", getArgType($words[3]), getContent($words[3]));
+            break;
+        case "READ":
+        case "STRLEN":
+        case "TYPE":
+        case "MOVE":
+            checkNumbArg($words,2);
+
+            createArgument($xml, "arg1", "var", getContent($words[1]));
+            createArgument($xml, "arg2", getArgType($words[2]), getContent($words[2]));
+            break;
+        case "LABEL":
+        case "JUMP":
+            checkNumbArg($words,1);
+            createArgument($xml, "arg1", "label", getContent($words[1]));
+            break;
+        case "JUMPIFEQ":
+        case "JUMPIFNEQ":
+            checkNumbArg($words,3);
+            createArgument($xml, "arg1", "label", getContent($words[1]));
+            createArgument($xml, "arg2", getArgType($words[2]), getContent($words[2]));
+            createArgument($xml, "arg3", getArgType($words[3]), getContent($words[3]));
+            break;
+        default:
+            exit(22);
     }
 
     $xml->endElement(); // instruction element end
@@ -42,26 +109,54 @@ $xml->endDocument(); // program element end
 
 // ************** MAIN FUNCTION END **************
 
-function getArgType($words,$argNumber){
-    if($words[0] == "LABEL"){
-        return "label";
+function getArgType($arg){
+    if(str_contains($arg,"string@")){
+        return "string";
     }
-    $arg = $words[$argNumber];
-    if(strpos($arg,"@")){
-        if(strpos($arg,"string@")){
-            return "string";
-        }
-        else{
-            return "var";
-        }
+    if(str_contains($arg,"int@")){
+        return "int";
+    }
+    if(str_contains($arg,"bool@")){
+        return "bool";
+    }
+    if(str_contains($arg,"nil@")){
+        return "nil";
     }
 }
 
-function createArgument ($xml,$argName,$argType,$content){
-    $xml->startElement($argName);
-    $xml->writeAttribute("type",$argType);
-    xmlwriter_text($xml, $content);
-    $xml->endElement();
+function getContent($arg){
+    if(str_contains($arg,"string@")){
+        return substr($arg,7);
+    }
+    elseif(str_contains($arg,"int@")){
+        return substr($arg,4);
+    }
+    elseif(str_contains($arg,"bool@")) {
+        return substr($arg, 5);
+    }
+    elseif(str_contains($arg,"nil@")) {
+        return "nil";
+    }
+    else{
+        return $arg;
+    }
+}
+
+function checkNumbArg($words,$corrNum){
+    if(count($words)-1!=$corrNum){
+        exit(23);
+    }
+}
+
+function createArgument ($xml, $argName, $argType, $content){
+        //if var type, then var content
+        if($argType === "var" && !str_contains($content,"LF@" && !str_contains($content,"GF@"))){
+            exit(23);
+        }
+        $xml->startElement($argName);
+        $xml->writeAttribute("type", $argType);
+        xmlwriter_text($xml, $content);
+        $xml->endElement();
 }
 
 /**Function will delete the comment, delete empty line and split the line to array*/
@@ -74,7 +169,7 @@ function lineToProperArray($line, $stdin): array
         $line = fgets($stdin);
         $line = commentIgnore($line);
     }
-
+    $line=trim($line);
     $words = explode(" ",$line);
     $words[0] = strtoupper($words[0]);
 
