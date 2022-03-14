@@ -22,18 +22,15 @@ for ($i=0;($line = fgets($stdin)) !== false;$i++) {
 
     $words = lineToProperArray($line, $stdin);
 
+    if($words[0]==""){ // we are not working with empty lines
+        break;
+    }
+
     $xml->startElement("instruction");
     $xml->writeAttribute("order",$i);
     $xml->writeAttribute("opcode",$words[0]);
 
     switch($words[0]){
-        case "POPS":
-        case "CALL":
-        case "DEFVAR":
-            checkNumbArg($words,1);
-
-            createArgument($xml, "arg1", "var", getContent($words[1]));
-            break;
         case "BREAK":
         case "RETURN":
         case "CREATEFRAME":
@@ -41,14 +38,38 @@ for ($i=0;($line = fgets($stdin)) !== false;$i++) {
         case "POPFRAME":
             checkNumbArg($words,0);
             break;
+
+        case "POPS":
+        case "CALL":
+        case "DEFVAR":
+            checkNumbArg($words,1);
+
+            createArgument($xml, "arg1", "var", $words[1]);
+            break;
+
         case "WRITE":
         case "EXIT":
         case "DPRINT":
         case "PUSH":
             checkNumbArg($words,1);
-
-            createArgument($xml, "arg1", getArgType($words[1]), getContent($words[1]));
+            createArgument($xml, "arg1", "sym", $words[1]);
             break;
+
+        case "LABEL":
+        case "JUMP":
+            checkNumbArg($words,1);
+            createArgument($xml, "arg1", "label", $words[1]);
+            break;
+
+        case "READ":
+        case "STRLEN":
+        case "TYPE":
+        case "MOVE":
+            checkNumbArg($words,2);
+            createArgument($xml, "arg1", "var", $words[1]);
+            createArgument($xml, "arg2", "sym", $words[2]);
+            break;
+
         case "ADD" :
         case "SUB":
         case "MUL":
@@ -64,47 +85,24 @@ for ($i=0;($line = fgets($stdin)) !== false;$i++) {
         case "GETCHAR":
         case "SETCHAR":
             checkNumbArg($words,3);
-
-            //check dividing zero
-            if($words[0] == "IDIV" && getContent($words[3],3)==0){
-                exit(57);
-            }
-
-            createArgument($xml, "arg1", "var", getContent($words[1]));
-            createArgument($xml, "arg2", getArgType($words[2]), getContent($words[2]));
-            createArgument($xml, "arg3", getArgType($words[3]), getContent($words[3]));
+            createArgument($xml, "arg1", "var", $words[1]);
+            createArgument($xml, "arg2", "sym", $words[2]);
+            createArgument($xml, "arg3", "sym", $words[3]);
             break;
-        case "READ":
-        case "STRLEN":
-        case "TYPE":
-        case "MOVE":
-            checkNumbArg($words,2);
 
-            createArgument($xml, "arg1", "var", getContent($words[1]));
-            createArgument($xml, "arg2", getArgType($words[2]), getContent($words[2]));
-            break;
-        case "LABEL":
-        case "JUMP":
-            checkNumbArg($words,1);
-            createArgument($xml, "arg1", "label", getContent($words[1]));
-            break;
         case "JUMPIFEQ":
         case "JUMPIFNEQ":
             checkNumbArg($words,3);
-            createArgument($xml, "arg1", "label", getContent($words[1]));
-            createArgument($xml, "arg2", getArgType($words[2]), getContent($words[2]));
-            createArgument($xml, "arg3", getArgType($words[3]), getContent($words[3]));
+            createArgument($xml, "arg1", "label", $words[1]);
+            createArgument($xml, "arg2", "sym", $words[2]);
+            createArgument($xml, "arg3", "sym", $words[3]);
             break;
         default:
-            exit(22);
+           // exit(22);
     }
-
     $xml->endElement(); // instruction element end
 }
 
-if (!feof($stdin)) {
-    echo "Error: unexpected fail\n";
-}
 $xml->endDocument(); // program element end
 
 // ************** MAIN FUNCTION END **************
@@ -113,14 +111,23 @@ function getArgType($arg){
     if(str_contains($arg,"string@")){
         return "string";
     }
-    if(str_contains($arg,"int@")){
+    elseif(str_contains($arg,"int@")){
         return "int";
     }
-    if(str_contains($arg,"bool@")){
+    elseif(str_contains($arg,"bool@")){
         return "bool";
     }
-    if(str_contains($arg,"nil@")){
+    elseif(str_contains($arg,"nil@")){
         return "nil";
+    }
+    elseif(str_contains($arg,"LF@")) {
+        return "var";
+    }
+    elseif(str_contains($arg,"GF@")) {
+        return "var";
+    }
+    else{
+        return "label";
     }
 }
 
@@ -142,30 +149,50 @@ function getContent($arg){
     }
 }
 
+/**Function check if the instruction has correct number of arguments*/
 function checkNumbArg($words,$corrNum){
     if(count($words)-1!=$corrNum){
         exit(23);
     }
 }
 
+function checkTheType($argType,$content){
+    if($argType == "label" && getArgType($content) == "label"){
+        return;
+    }
+    if($argType != "sym" && $argType != getArgType($content)){
+        exit(23);
+    }
+}
+
+/**Function creates XML argument element*/
 function createArgument ($xml, $argName, $argType, $content){
-        //if var type, then var content
-        if($argType === "var" && !str_contains($content,"LF@" && !str_contains($content,"GF@"))){
-            exit(23);
-        }
-        $xml->startElement($argName);
-        $xml->writeAttribute("type", $argType);
-        xmlwriter_text($xml, $content);
-        $xml->endElement();
+    checkTheType($argType,$content);
+
+    if($argType == "sym"){
+        $argType = getArgType($content);
+    }
+
+    if($argType=="" && getArgType($content) == "var"){
+        $argType == "var";
+    }
+
+    $content = getContent($content);
+    //if var type, then var content
+
+    $xml->startElement($argName);
+    $xml->writeAttribute("type", $argType);
+    xmlwriter_text($xml, $content);
+    $xml->endElement();
 }
 
 /**Function will delete the comment, delete empty line and split the line to array*/
 function lineToProperArray($line, $stdin): array
 {
     $line = commentIgnore($line);
-
+    $line=trim($line);
     //if its empty line, read the next line
-    if($line == ""){
+    if($line == "" || $line == "\n"){
         $line = fgets($stdin);
         $line = commentIgnore($line);
     }
