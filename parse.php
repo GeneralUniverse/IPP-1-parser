@@ -98,7 +98,7 @@ for ($i=0;($line = fgets($stdin)) !== false;$i++) {
             createArgument($xml, "arg3", "sym", $words[3]);
             break;
         default:
-           // exit(22);
+            // exit(22);
     }
     $xml->endElement(); // instruction element end
 }
@@ -108,22 +108,22 @@ $xml->endDocument(); // program element end
 // ************** MAIN FUNCTION END **************
 
 function getArgType($arg){
-    if(str_contains($arg,"string@")){
+    if(strpos($arg,"string@") === 0){
         return "string";
     }
-    elseif(str_contains($arg,"int@")){
+    elseif(strpos($arg,"int@") === 0){
         return "int";
     }
-    elseif(str_contains($arg,"bool@")){
+    elseif(strpos($arg,"bool@") === 0){
         return "bool";
     }
-    elseif(str_contains($arg,"nil@")){
+    elseif(strpos($arg,"nil@") === 0){
         return "nil";
     }
-    elseif(str_contains($arg,"LF@")) {
+    elseif(strpos($arg,"LF@") === 0) {
         return "var";
     }
-    elseif(str_contains($arg,"GF@")) {
+    elseif(strpos($arg,"GF@") === 0) {
         return "var";
     }
     else{
@@ -132,16 +132,16 @@ function getArgType($arg){
 }
 
 function getContent($arg){
-    if(str_contains($arg,"string@")){
+    if(strpos($arg,"string@") === 0){
         return substr($arg,7);
     }
-    elseif(str_contains($arg,"int@")){
+    elseif(strpos($arg,"int@") === 0){
         return substr($arg,4);
     }
-    elseif(str_contains($arg,"bool@")) {
+    elseif(strpos($arg,"bool@") === 0) {
         return substr($arg, 5);
     }
-    elseif(str_contains($arg,"nil@")) {
+    elseif(strpos($arg,"nil@") === 0) {
         return "nil";
     }
     else{
@@ -187,7 +187,7 @@ function createArgument ($xml, $argName, $argType, $content){
 }
 
 /**Function will delete the comment, delete empty line and split the line to array*/
-function lineToProperArray($line, $stdin): array
+function lineToProperArray($line, $stdin)
 {
     $line = commentIgnore($line);
     $line=trim($line);
@@ -243,7 +243,7 @@ function checkTheSTDIN($stdin){
 }
 
 /**Function delete comments (everything after "#" )*/
-function commentIgnore($line): string
+function commentIgnore($line)
 {
     $i=0;
     $commentFreeLine="";
