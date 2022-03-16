@@ -1,5 +1,5 @@
-**Implementační dokumentace k 1. úloze do IPP 2021/2022**
-**Jméno a příjmení: Dominik Klon**
+**Implementační dokumentace k 1. úloze do IPP 2021/2022**\
+**Jméno a příjmení: Dominik Klon**\
 **Login: xklond00**
 
 ## Návrh
