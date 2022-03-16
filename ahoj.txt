@@ -12,7 +12,7 @@ label while
 
 
 JUMPiFEQ exit GF@counter string@aaa
-WRITE string@Proměnná\032GF@counter\032obsahuje\032
+WRITE string@Proměnná\032GFcounter\032obsahuje\032
 		WriTE GF@counter
 WRITE string@nil
 WRITE bool@true

@@ -1,6 +1,2 @@
-.IPPcode22  # nacteni vstupu a vypis
-DEFVAR GF@a
-READ GF@a int2
-WRITE GF@a
-WRITE string@\032<not-tag/>\032 # řetězec převádíme, aby byl správně uložen do XML elementu
-WRITE bool@true#zapisujeme malými písmeny
+.IPPcode22
+ADD GF@var bool@true int@55

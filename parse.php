@@ -50,7 +50,7 @@ for ($i=1;($line = fgets($stdin)) !== false;$i++) {
         case "WRITE":
         case "EXIT":
         case "DPRINT":
-        case "PUSH":
+        case "PUSHS":
             checkNumbArg($words,1);
             createArgument($xml, "arg1", "sym", $words[1]);
             break;
@@ -108,10 +108,13 @@ for ($i=1;($line = fgets($stdin)) !== false;$i++) {
 }
 
 $xml->endDocument(); // program element end
-
+return 0;
 // ************** MAIN FUNCTION END **************
 
+/** This function will get the argument type from argument with @. */
 function getArgType($arg){
+    $arg = strtolower($arg);
+
     if(strpos($arg,"string@") === 0){
         return "string";
     }
@@ -124,10 +127,13 @@ function getArgType($arg){
     elseif(strpos($arg,"nil@") === 0){
         return "nil";
     }
-    elseif(strpos($arg,"LF@") === 0) {
+    elseif(strpos($arg,"lf@") === 0) {
         return "var";
     }
-    elseif(strpos($arg,"GF@") === 0) {
+    elseif(strpos($arg,"gf@") === 0) {
+        return "var";
+    }
+    elseif(strpos($arg,"tf@") === 0) {
         return "var";
     }
     else{
@@ -135,11 +141,17 @@ function getArgType($arg){
     }
 }
 
+/** This function will cut out the type from and argument and return the content only. */
 function getContent($arg){
+    $arg = strtolower($arg);
+
     if(strpos($arg,"string@") === 0){
         return substr($arg,7);
     }
     elseif(strpos($arg,"int@") === 0){
+        if(!ctype_digit(substr($arg,4))){
+            exit(23);
+        }
         return substr($arg,4);
     }
     elseif(strpos($arg,"bool@") === 0) {
@@ -163,8 +175,20 @@ function checkNumbArg($words,$corrNum){
     }
 }
 
+/** This function check various problem with types. */
 function checkTheType($argType,$content){
-    if($argType == "type"){
+
+    if($argType == "var"){      //var cant start with 0 or /
+         if(strpos($content,"0") === 3 || strpos($content,"/") === 3){
+             exit(23);
+         }
+    }
+
+    if (substr_count($content, "@") > 1) { // there cant be more than 1 @ in argument
+        exit(23);
+    }
+
+    if($argType == "type"){ //type can contain only these three value
         $content = strtoupper($content);
         if($content != "INT" && $content != "STRING" && $content != "BOOL"){
             exit(23);
@@ -192,11 +216,7 @@ function createArgument ($xml, $argName, $argType, $content){
         $argType = getArgType($content);
     }
 
-    if($argType=="" && getArgType($content) == "var"){
-        $argType == "var";
-    }
-
-    if($argType == "type"){
+    if($argType == "type"){         // content of type type variable change the type of the variable
         $argType = $content;
     }
 
@@ -208,20 +228,26 @@ function createArgument ($xml, $argName, $argType, $content){
     $xml->endElement();
 }
 
+function deleteWhiteSpaces($input){
+    return preg_replace('/\s+/', ' ',$input);
+}
+
 /**Function will delete the comment, delete empty line and split the line to array*/
 function lineToProperArray($line, $stdin)
 {
     $line = commentIgnore($line);
-    $line = htmlspecialchars($line);
     $line = trim($line);
+    $line = deleteWhiteSpaces($line);
 
     //if its empty line, read the next line
     if($line == ""){
         $line = fgets($stdin);
         $line = commentIgnore($line);
-        $line = htmlspecialchars($line);
         $line = trim($line);
+        $line = deleteWhiteSpaces($line);
     }
+
+    $line = htmlspecialchars($line);
 
     $words = explode(" ",$line);
     $words[0] = strtoupper($words[0]);
@@ -262,7 +288,7 @@ function setStartXML($xml){
 /**Function handle all possible arguments from terminal.*/
 function processArguments($argc,$argv){
     if($argc>2 || ($argc == 2 && $argv[1] != "--help")){
-        exit("Error: Not valid arguments.\n");
+        exit(10);
     }
 
     if($argc == 2 && $argv[1] == "--help"){
@@ -310,10 +336,13 @@ function commentIgnore($line)
 
 /**Function prints help for users.*/
 function printHelp(){
-//    $str="/032";
-//    $str = preg_replace_callback('/\\\([0-9]{3})/', function ($match) {
-//        return mb_convert_encoding(pack('H*', $match[1]), 'UTF-8', 'UCS-2BE');
-//    }, $str);
-//    echo $str;
-    echo "POMOOOOOC\n";
+    echo "Skript typu filtr (parse.php v jazyce PHP 8.1) nacte ze standardniho vstupu zdrojovy kod v IPPcode22, zkontroluje lexikalni a syntaktickou spravnost kodu a vypise na standardni vystup XML reprezentaci programu.
+
+Tento skript pracuje s temito parametry:
+* --help vypise tuto napovedu.
+
+Chybove navratove kody specificke pro analyzator:
+* 21 - chybna nebo chybejici hlavicka ve zdrojovem kodu zapsanem v IPPcode22;
+* 22 - neznamy nebo chybny operacni kod ve zdrojovem kodu zapsanem v IPPcode22;
+* 23 - jina lexikalni nebo syntakticka chyba zdrojoveho kodu zapsaneho v IPPcode22.\n";
 }
