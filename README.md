@@ -1,4 +1,4 @@
-4,7/7
+points: 4,7/7
 
 **Implementační dokumentace k 1. úloze do IPP 2021/2022**\
 **Jméno a příjmení: Dominik Klon**\
